@@ -318,4 +318,5 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       return instance;
     });
   }
+
 }
