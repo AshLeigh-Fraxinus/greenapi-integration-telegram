@@ -1,0 +1,32 @@
+{
+  "entryPoints": [
+    "./src/index.ts"
+  ],
+  "out": "docs",
+  "name": "GREEN-API Integration Platform",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "plugin": [
+    "typedoc-plugin-markdown"
+  ],
+  "theme": "default",
+  "categoryOrder": [
+    "Core",
+    "Client",
+    "Storage",
+    "Authentication",
+    "Transformation",
+    "Types",
+    "Utilities",
+    "Errors",
+    "*"
+  ],
+  "categorizeByGroup": true,
+  "readme": "./README.md",
+  "sidebarLinks": {
+    "API Documentation": "modules"
+  },
+  "navigationLinks": {
+    "Table of Contents": "/"
+  }
+}
