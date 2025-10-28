@@ -1,7 +1,7 @@
 import { GreenApiClient } from "@green-api/greenapi-integration";
-import { TelegramBot } from "../../client/telegram.client";
+import { TelegramBot } from "../../../client/telegram.client";
 
-export class ReplyCommand {
+export class SendMessage {
   constructor(
     private bot: TelegramBot
   ) {}
@@ -25,7 +25,7 @@ export class ReplyCommand {
         await this.bot.send({
           chat_id: chatId,
           text: "Неверный формат. Используйте:\n" +
-            "/reply <chatId> <message>\n\n" +
+            "<code>/reply &lt;chatId&gt; &lt;message&gt;</code>\n\n" +
             "Например:\n" +
             "/reply 1234567890@c.us Привет!"
         });

@@ -1,13 +1,18 @@
-import { TelegramBot } from "../../client/telegram.client";
-import { SQLiteStorage } from "../../core/storage";
+import { TelegramBot } from "../../../client/telegram.client";
+import { SQLiteStorage } from "../../../core/storage";
+import { setSettings } from '../methods/setSettings'
 
 export class InstanceCommand {
+  private setSettings: setSettings;
+
   constructor(
     private storage: SQLiteStorage,
     private bot: TelegramBot
-  ) {}
+  ) {
+    this.setSettings = new setSettings(storage, bot);
+  }
 
-  async execute(messageText: string, chatId: string): Promise<{ status: string }> {
+  async execute (messageText: string, chatId: string): Promise<{ status: string }> {
     console.log("[COMMANDS.instance] Handling command")
     try {
       const parts = messageText.split(' ');
@@ -31,7 +36,7 @@ export class InstanceCommand {
       const user = await this.storage.findUser(chatId);
       const userName = user?.user_name || `user_${chatId}`;
 
-      await this.storage.createInstance({
+      const instanceData = {
         idInstance: idInstanceNumber,
         apiTokenInstance: apiToken,
         name: userName,
@@ -39,18 +44,33 @@ export class InstanceCommand {
         settings: {
           chatId: chatId
         }
-      }, 0);
+      };
+
+      await this.storage.createInstance(instanceData, BigInt(chatId));
 
       console.log('[COMMANDS.instance] Created/updated instance for user:', { chatId, idInstance: idInstanceNumber });
 
+      const setSettings = await this.setSettings.execute(instanceData);
+
+      let message = "Инстанс успешно привязан!\n\n";
+
+      if (setSettings) {
+        message += "Вебхук автоматически установлен.\n\n";
+      } else {
+        message += "Не удалось установить вебхук автоматически. " +
+                  "Пожалуйста, установите его вручную в настройках Green API:\n" +
+                  `URL: ${process.env.WEBHOOK_URL}/webhook/whatsapp\n\n`;
+      }
+
+      message += "Теперь вы можете получать и отправлять сообщения через WhatsApp.\n\n" +
+                "Доступные команды:\n" +
+                "• /status - статус инстанса\n" +
+                "• /resetInstance - сменить инстанс\n" +
+                "• /help - помощь";
+
       await this.bot.send({
         chat_id: chatId,
-        text: "Инстанс успешно привязан!\n\n" +
-          "Теперь вы можете получать и отправлять сообщения через WhatsApp.\n\n" +
-          "Доступные команды:\n" +
-          "• /status - статус инстанса\n" +
-          "• /reinstance - сменить credentials\n" +
-          "• /help - помощь"
+        text: message
       });
 
       console.log("[COMMANDS.instance] Instance saved")

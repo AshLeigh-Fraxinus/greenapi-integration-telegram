@@ -1,4 +1,4 @@
-import { StorageProvider, Instance } from '@green-api/greenapi-integration';
+import { StorageProvider, Instance } from '@green-api/greenapi-integration'
 import { TelegramUser } from '../types/types';
 import Database from 'better-sqlite3';
 
@@ -20,6 +20,8 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
         first_name TEXT,
         id_instance TEXT,
         apiTokenInstance TEXT,
+        partner_token TEXT,
+        target_chat_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -27,23 +29,29 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
   }
 
   async createInstance(instance: Instance, userId: bigint | number): Promise<Instance> {
-    console.log('[STORAGE] Adding Instance', instance, 'to database');
+    console.log('[STORAGE] Adding Instance', instance, 'to database for user:', userId);
+    
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO users (chat_id, user_name, id_instance, apiTokenInstance)
-      VALUES (?, ?, ?, ?)
+      UPDATE users 
+      SET id_instance = ?, apiTokenInstance = ?, user_name = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
     `);
     
     const result = stmt.run(
-      (instance as any).chat_id,
-      instance.name,
       instance.idInstance.toString(),
-      instance.apiTokenInstance
+      instance.apiTokenInstance,
+      instance.name,
+      userId.toString() 
     );
 
-    console.log('[STORAGE] Added Instance', instance.idInstance, 'to database');
+    if (result.changes === 0) {
+      throw new Error(`User with chat_id ${userId} not found`);
+    }
+
+    console.log('[STORAGE] Added Instance', instance.idInstance, 'to database for user:', userId);
     return {
       ...instance,
-      id: Number(result.lastInsertRowid)
+      id: Number(userId) 
     };
   }
 
@@ -66,15 +74,15 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
     return instance;
   }
 
-  async removeInstance(instanceId: number | bigint): Promise<Instance> {
-    console.log('[STORAGE] Remove Instance', instanceId, 'from database');
-    const instance = await this.getInstance(instanceId);
+  async removeInstance(idInstance: number | bigint): Promise<Instance> {
+    console.log('[STORAGE] Remove Instance', idInstance, 'from database');
+    const instance = await this.getInstance(idInstance);
     if (!instance) {
       throw new Error("Instance not found");
     }
     
     const stmt = this.db.prepare(`DELETE FROM users WHERE id_instance = ?`);
-    stmt.run(instanceId.toString());
+    stmt.run(idInstance.toString());
     console.log('[STORAGE] Removed Instance', instance.idInstance, 'from database');
     return instance;
   }
@@ -102,7 +110,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
     return instance;
   }
 
-  async findUserByInstanceId(idInstance: number): Promise<TelegramUser | null> {
+  findUserByInstanceId(idInstance: number): TelegramUser | null {
     const stmt = this.db.prepare(`SELECT * FROM users WHERE id_instance = ?`);
     const row = stmt.get(idInstance.toString()) as any;
     if (!row) return null;
@@ -127,8 +135,8 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
   async createUser(data: Partial<TelegramUser>): Promise<TelegramUser> {
     console.log('[STORAGE] Adding new user:', data);
     const stmt = this.db.prepare(`
-      INSERT INTO users (chat_id, user_name, first_name, id_instance, apiTokenInstance)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (chat_id, user_name, first_name, id_instance, apiTokenInstance, partner_token)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -136,7 +144,8 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       data.user_name!,
       data.first_name || null,
       data.idInstance ? data.idInstance.toString() : null,
-      data.apiTokenInstance || null
+      data.apiTokenInstance || null,
+      data.partner_token || null
     );
 
     const user: TelegramUser = {
@@ -147,6 +156,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       language: 'en',
       idInstance: data.idInstance || 0,
       apiTokenInstance: data.apiTokenInstance || '',
+      partner_token: data.partner_token || '',
       state: undefined,
       created_at: new Date(),
       updated_at: new Date(),
@@ -188,7 +198,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
 
     const stmt = this.db.prepare(`
       UPDATE users 
-      SET user_name = ?, first_name = ?, id_instance = ?, apiTokenInstance = ?, updated_at = CURRENT_TIMESTAMP
+      SET user_name = ?, first_name = ?, id_instance = ?, apiTokenInstance = ?, partner_token = ?, updated_at = CURRENT_TIMESTAMP
       WHERE chat_id = ?
     `);
 
@@ -197,6 +207,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       data.first_name || user.first_name,
       data.idInstance ? data.idInstance.toString() : user.idInstance.toString(),
       data.apiTokenInstance || user.apiTokenInstance,
+      data.partner_token !== undefined ? data.partner_token : user.partner_token,
       identifier
     );
 
@@ -210,6 +221,65 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
 
     console.log('[STORAGE] User', user.user_name, 'updated');
     return updatedUser;
+  }
+
+  async setTargetChatId(chatId: string, targetChatId: string): Promise<void> {
+    console.log('[STORAGE] Setting target chat_id for user:', chatId, '->', targetChatId);
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET target_chat_id = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
+    `);
+    
+    const result = stmt.run(targetChatId, chatId);
+    if (result.changes === 0) {
+      throw new Error('User not found');
+    }
+    console.log('[STORAGE] Target chat_id set for user:', chatId);
+  }
+
+  async getTargetChatId(chatId: string): Promise<string | null> {
+    console.log('[STORAGE] Getting target chat_id for user:', chatId);
+    const stmt = this.db.prepare(`SELECT target_chat_id FROM users WHERE chat_id = ?`);
+    const row = stmt.get(chatId) as any;
+    return row?.target_chat_id || null;
+  }
+
+  async resetTargetChatId(chatId: string): Promise<void> {
+    console.log('[STORAGE] Resetting target chat_id for user:', chatId);
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET target_chat_id = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
+    `);
+    
+    const result = stmt.run(chatId);
+    if (result.changes === 0) {
+      throw new Error('User not found');
+    }
+    console.log('[STORAGE] Target chat_id reset for user:', chatId);
+  }
+
+  async setPartnerToken(chatId: string, partnerToken: string): Promise<void> {
+    console.log('[STORAGE] Setting partner token for user:', chatId);
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET partner_token = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
+    `);
+    
+    const result = stmt.run(partnerToken, chatId);
+    if (result.changes === 0) {
+      throw new Error('User not found');
+    }
+    console.log('[STORAGE] Partner token set for user:', chatId);
+  }
+
+  async getPartnerToken(chatId: string): Promise<string | null> {
+    console.log('[STORAGE] Getting partner token for user:', chatId);
+    const stmt = this.db.prepare(`SELECT partner_token FROM users WHERE chat_id = ?`);
+    const row = stmt.get(chatId) as any;
+    return row?.partner_token || null;
   }
 
 }

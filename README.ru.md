@@ -15,6 +15,8 @@
 [![NPM Version](https://img.shields.io/npm/v/@green-api/greenapi-integration)](https://www.npmjs.com/package/@green-api/whatsapp-chatbot-js-v2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+- [Documentation in English](README.md)
+
 Эта интеграция обеспечивает взаимодействие с WhatsApp в Telegram через платформу GREEN-API. Разработана на базе [Universal Integration Platform](https://github.com/green-api/greenapi-integration) от GREEN-API и состоит из адаптера, который преобразует сообщения между Telegram и WhatsApp.
 
 ## Архитектура
@@ -23,7 +25,7 @@
 
 Приложение Express.js, которое:
 
-- Обрабатывает преобразование сообщений между Telegram и WhatsApp   
+- Обрабатывает преобразование сообщений между Telegram и WhatsApp     
 - Управляет инстансами GREEN-API    
 - Обрабатывает аутентификацию пользователей и выполнение команд 
 - Предоставляет конечные точки для вебхуков обеих платформ  
@@ -35,10 +37,15 @@
 
 - `/start` - Начало работы с ботом      
 - `/instance` [idInstance] [apiTokenInstance] - Привязка инстанса GREEN-API     
-- `/reinstance` - Перепривязка инстанса     
-- `/status или` `/getStateInstance` - Проверка статуса инстанса     
+- `/resetInstance` - Перепривязка инстанса     
+- `/status` или `/getStateInstance` - Проверка статуса инстанса     
 - `/help` - Справка по командам     
 - `/reply` или `/sendMessage` [номер WhatsApp] [текст] - Отправка сообщения в WhatsApp      
+- `/me` - Информация о текущем пользователе 
+- `/setpartnertoken` [token] - Установка партнерского токена  
+- `/createinstance` - Создание нового инстанса  
+- `/getinstances` - Получение списка инстансов  
+- `/deleteinstance` [idInstance] - Удаление инстанса 
 
 ### Предварительные требования
 
@@ -69,6 +76,7 @@ npm install
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 PORT=3000
+WEBHOOK_URL= https://your-webhook-url/
 ```
 
 4. Запустите приложение:
@@ -80,14 +88,6 @@ npm start
 ```bash
 npm install @green-api/greenapi-integration
 ```
-
-### Настройка вебхуков
-
-Для работы в продакшене необходимо настроить вебхуки:
-
-1. Убедитесь, что ваш сервер имеет публичный URL        
-2. Настройте вебхук Telegram на ваш URL: https://your-domain.com/webhook/telegram       
-3. Настройте вебхук GREEN-API на ваш URL: https://your-domain.com/webhook/greenapi      
 
 ### Развертывание
 
@@ -148,7 +148,7 @@ docker-compose up -d
 /instance 1101111111 abcdef123456789abcdef123456789
 ```
 
-3. Проверка статуса
+3. Проверка статуса инстанса
 
 ```text
 /status
@@ -163,19 +163,19 @@ docker-compose up -d
 4. Ответ на сообщения WhatsApp
 
 ```text
-/reply [текст сообщения]
+/reply [номер WhatsApp] [текст сообщения]
 ```
 
 или
 
 ```text
-/sendMessage [текст сообщения]
+/sendMessage [номер WhatsApp] [текст сообщения]
 ```
 
 5. Перепривязка инстанса
 
 ```text
-/reinstance
+/resetInstance
 ```
 
 6. Справка
@@ -194,14 +194,6 @@ docker-compose up -d
 2. apiTokenInstance - Токен доступа вашего инстанса 
 
 Эти данные можно получить в личном кабинете GREEN-API после создания инстанса.
-
-### Настройка вебхуков в GREEN-API
-
-Для корректной работы необходимо настроить вебхуки в вашем инстансе GREEN-API:
-
-1. Перейдите в настройки инстанса в личном кабинете GREEN-API   
-2. В разделе "Уведомления" укажите URL вашего адаптера: https://your-domain.com/webhook/whatsapp    
-3. Выберите типы уведомлений: "входящее сообщение", "статус сообщения", "изменение состояния инстанса"  
 
 ### Поддерживаемые типы сообщений
 

@@ -1,16 +1,23 @@
 import { 
-  MessageTransformer, 
   Message, 
+  MessageWebhook,
   GreenApiWebhook, 
   IntegrationError,
-  MessageWebhook,
+  MessageTransformer,
+  StateInstanceWebhook,
   OutgoingMessageStatusWebhook,
-  StateInstanceWebhook
 } from "@green-api/greenapi-integration";
+import { SQLiteStorage } from "./storage";
 import { TelegramWebhook, TelegramPlatformMessage } from "../types/types"
 
 export class TelegramTransformer extends MessageTransformer<TelegramWebhook, TelegramPlatformMessage> {
   
+  public constructor(
+    private storage: SQLiteStorage
+  ) {
+    super();
+  }
+
   private formatSenderInfo(webhook: MessageWebhook): string {
     const senderData = webhook.senderData;
     if (!senderData) return "";
@@ -27,7 +34,7 @@ export class TelegramTransformer extends MessageTransformer<TelegramWebhook, Tel
   }
 
   private getHeader(webhook: MessageWebhook): string {
-    return `✉️ Новое сообщение WhatsApp:\n\n${this.formatSenderInfo(webhook)}\n⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭\n\n`;
+    return `Новое сообщение WhatsApp:\n\n${this.formatSenderInfo(webhook)}\n⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭ ⸭\n\n`;
   }
 
   private extractPhoneNumber(vcard: string): string {
@@ -160,18 +167,43 @@ export class TelegramTransformer extends MessageTransformer<TelegramWebhook, Tel
   }
 
   private handleStateInstanceChanged(webhook: StateInstanceWebhook): TelegramPlatformMessage {
+    return {
+      chat_id: "",
+      text: `Изменение статуса инстанса ${webhook.instanceData.idInstance}: ${webhook.stateInstance}`,
+      parse_mode: 'HTML'
+    };
+  }
+
+  async handleStateInstanceChangedWithUser(webhook: StateInstanceWebhook): Promise<TelegramPlatformMessage> {
+    const user = await this.storage.findUserByInstanceId(webhook.instanceData.idInstance);
+
+    if (!user) {
+      return {
+        chat_id: "",
+        text: `Ошибка: пользователь для инстанса ${webhook.instanceData.idInstance} не найден`,
+        parse_mode: 'HTML'
+      };
+    }
+
+    const apiTokenInstance = user.apiTokenInstance;
+
     const stateMap: { [key: string]: string } = {
-      authorized: "Авторизован",
-      notAuthorized: "Не авторизован",
-      blocked: "Заблокирован",
-      starting: "Запуск"
+      authorized: "<code>authorized</code>\n\nИнстанс авторизован и готов к работе",
+      notAuthorized: "<code>notAuthorized</code>\n\nИнстанс не авторизован.\n" +
+      "Для авторизации инстанса перейдите по ссылке:\n" +
+      "https://qr.green-api.com/waInstance" + webhook.instanceData.idInstance + "/" + apiTokenInstance,
+      blocked: "<code>blocked</code>",
+      starting: "<code>starting</code>\n\nИнстанс в процессе запуска (сервисный режим).\n" +
+      "Происходит перезагрузка инстанса, сервера или инстанс в режиме обслуживания. " +
+      "Может потребоваться до 5 минут для перехода состояния инстанса в значение <code>authorized</code>"
     };
 
     const state = stateMap[webhook.stateInstance] || webhook.stateInstance;
     
     return {
       chat_id: "",
-      text: `Изменение статуса инстанса:\nНовый статус: ${state}`
+      text: `<b>Изменение статуса инстанса ${webhook.instanceData.idInstance}</b>: ${state}`,
+      parse_mode: 'HTML'
     };
   }
 

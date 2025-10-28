@@ -5,6 +5,7 @@ export interface TelegramUser extends BaseUser {
   user_name: string;
   language?: string;
   state?: string;
+  target_chat_id?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -46,6 +47,7 @@ export interface TelegramMessage {
   document?: TelegramDocument;
   location?: TelegramLocation;
   contact?: TelegramContact;
+  sticker?: TelegramSticker;
   reply_to_message?: TelegramMessage;
   parseMode: 'HTML'
 }
@@ -138,6 +140,16 @@ export interface TelegramContact {
   last_name?: string;
   user_id?: number;
   vcard?: string;
+}
+
+export interface TelegramSticker {
+  file_id: string;
+  file_unique_id: string;
+  width: number;
+  height: number;
+  is_animated: boolean;
+  is_video: boolean;
+  file_size?: number;
 }
 
 export interface TelegramSendMessage {
@@ -242,3 +254,29 @@ export type TelegramPlatformMessage =
   | TelegramSendLocation
   | TelegramSendContact;
   
+export interface PartnerInstance {
+  idInstance: number;
+  name: string;
+  typeInstance: string;
+  typeAccount: string;
+  partnerUserUiid: string;
+  timeCreated: string;
+  timeDeleted: string;
+  apiTokenInstance: string;
+  deleted: boolean;
+  tariff: string;
+  isFree: boolean;
+  isPartner: boolean;
+  expirationDate: string;
+  isExpired: boolean;
+}
+
+export interface CreateInstanceResponse {
+  idInstance: number;
+  apiTokenInstance: string;
+}
+
+export interface PartnerInstanceList {
+  data: PartnerInstanceList;
+  instances: PartnerInstance[];
+}

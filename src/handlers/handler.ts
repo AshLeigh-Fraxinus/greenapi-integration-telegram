@@ -1,13 +1,19 @@
 import { IntegrationError } from "@green-api/greenapi-integration";
+import { PartnerApiClient } from "../client/partner.client";
 import { TelegramBot } from "../client/telegram.client";
 import { SQLiteStorage } from "../core/storage";
 import {
-  StartCommand,
-  InstanceCommand,
-  ReinstanceCommand,
-  StatusCommand,
+  MeCommand,
   HelpCommand,
-  ReplyCommand
+  SendMessage,
+  StartCommand,
+  getSettings,
+  InstanceCommand,
+  GetInstancesCommand,
+  DeleteInstanceCommand,
+  CreateInstanceCommand,
+  ChangeInstanceCommand,
+  SetPartnerTokenCommand,
 } from "./commands";
 
 export class TelegramHandler {
@@ -77,7 +83,7 @@ export class TelegramHandler {
 
   private async handleCommand(messageText: string, chatId: string, instance: any) {
     const command = messageText.split(' ')[0];
-    console.log("[HANDLER] received command: ", command);
+    console.log("[HANDLER] Received command: ", command);
     
     switch (command) {
       case '/start':
@@ -88,13 +94,15 @@ export class TelegramHandler {
         const instanceCommand = new InstanceCommand(this.storage, this.bot);
         return await instanceCommand.execute(messageText, chatId);
 
-      case '/reinstance':
-        const reinstanceCommand = new ReinstanceCommand(this.storage, this.bot);
-        return await reinstanceCommand.execute(chatId);
+      case '/resetInstance':
+      case '/resetinstance':
+        const resetInstanceCommand = new ChangeInstanceCommand(this.storage, this.bot);
+        return await resetInstanceCommand.execute(chatId);
 
       case '/status':
       case '/getStateInstance':
-        const statusCommand = new StatusCommand(this.storage, this.bot);
+      case '/getstateinstance':
+        const statusCommand = new getSettings(this.storage, this.bot);
         return await statusCommand.execute(chatId, instance);
 
       case '/help':
@@ -103,8 +111,37 @@ export class TelegramHandler {
 
       case '/reply':
       case '/sendMessage':
-        const replyCommand = new ReplyCommand(this.bot);
+      case '/sendmessage':
+        const replyCommand = new SendMessage(this.bot);
         return await replyCommand.execute(messageText, chatId, instance);
+
+      case '/setpartnertoken':
+      case '/setPartnerToken':
+      case '/partnerToken':
+      case '/partnertoken':
+        const setTokenCommand = new SetPartnerTokenCommand(this.storage, this.bot);
+        return await setTokenCommand.execute(messageText, chatId);
+
+      case '/createinstance':
+      case '/createInstance':
+        const createInstanceCommand = new CreateInstanceCommand(this.storage, this.bot);
+        return await createInstanceCommand.execute(chatId);
+
+      case '/getinstances':
+      case '/getInstances':
+        const getInstancesCommand = new GetInstancesCommand(this.storage, this.bot);
+        return await getInstancesCommand.execute(chatId);
+
+      case '/deleteinstance':
+      case '/deleteInstance':
+      case '/deleteInstanceAccount':
+      case '/deleteinstanceaccount':
+        const deleteInstanceAccountCommand = new DeleteInstanceCommand(this.storage, this.bot);
+        return await deleteInstanceAccountCommand.execute(messageText, chatId);
+      
+      case '/me':
+        const meCommand = new MeCommand(this.storage, this.bot);
+        return await meCommand.execute(chatId);
 
       default:
         await this.sendMessageViaAdapter(chatId, 
