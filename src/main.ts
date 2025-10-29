@@ -18,20 +18,26 @@ async function setupTelegramWebhook() {
   const fullWebhookUrl = `${webhookUrl}/webhook/telegram`;
   
   try {
-    const response = await axios.get(`https://api.telegram.org/bot${botToken}/setWebhook`, {
-      params: {
-        url: fullWebhookUrl,
-        drop_pending_updates: true // Опционально: удалить ожидающие обновления
-      }
+
+    await axios.get(`https://api.telegram.org/bot${botToken}/deleteWebhook`, {
+      params: { drop_pending_updates: true }
+    });
+
+    console.log('[MAIN] Telegram bot webhookUrl is reset');
+
+    const response = await axios.post(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+      url: fullWebhookUrl,
+      drop_pending_updates: true
     });
 
     if (response.data.ok) {
-      console.log(`[MAIN] Telegram вебхук успешно установлен: ${fullWebhookUrl}`);
+      console.log(`[MAIN] Telegram bot webhookUrl is set: ${fullWebhookUrl}`);
     } else {
-      console.error('[MAIN] Ошибка установки Telegram вебхука:', response.data.description);
+      console.error('[MAIN] Telegram bot webhookUrl setting error:', response.data.description);
     }
+
   } catch (error) {
-    console.error('[MAIN] Ошибка при установке Telegram вебхука:', error);
+    console.error('[MAIN] Telegram bot webhookUrl setting error:', error);
   }
 }
 
