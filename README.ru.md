@@ -145,8 +145,8 @@ docker-compose up -d
 /instance [idInstance] [apiTokenInstance]
 ```
 
-- idInstance: ID вашего инстанса GREEN-API  
-- apiTokenInstance: API токен вашего инстанса GREEN-API 
+- `idInstance`: ID вашего инстанса GREEN-API  
+- `apiTokenInstance`: API токен вашего инстанса GREEN-API 
 
 Пример:
 
@@ -220,8 +220,8 @@ docker-compose up -d
 
 Для работы интеграции вам потребуется:
 
-1. idInstance - ID вашего инстанса в GREEN-API  
-2. apiTokenInstance - Токен доступа вашего инстанса 
+1. `idInstance` - ID вашего инстанса в GREEN-API  
+2. `apiTokenInstance` - Токен доступа вашего инстанса 
 
 Эти данные можно получить в личном кабинете GREEN-API после создания инстанса.
 
@@ -242,10 +242,10 @@ docker-compose up -d
 
 Интеграция использует SQLite базу данных для хранения:
 
-- Данных пользователей Telegram  
-- Привязок к инстансам GREEN-API    
-– Пользовательские настройки и предпочтения  
-– Языковые настройки  
+- Данных пользователей Telegram
+- Привязок к инстансам GREEN-API
+- Пользовательские настройки и предпочтения
+- Языковые настройки
 - Настроек и состояний  
 
 Файл базы данных `storage.db` создается автоматически при первом запуске.
