@@ -3,7 +3,7 @@ import { TelegramBot } from "../../../client/telegram.client";
 import { Instance } from "@green-api/greenapi-integration";
 import { SQLiteStorage } from "../../../core/storage";
 
-export class setSettings {
+export class setWebhook {
   private webhookUrl: string;
 
   constructor(

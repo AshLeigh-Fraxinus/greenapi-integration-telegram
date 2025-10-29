@@ -10,6 +10,7 @@ import {
   getSettings,
   InstanceCommand,
   GetInstancesCommand,
+  NotificationsCommand,
   DeleteInstanceCommand,
   CreateInstanceCommand,
   ChangeInstanceCommand,
@@ -142,6 +143,12 @@ export class TelegramHandler {
       case '/me':
         const meCommand = new MeCommand(this.storage, this.bot);
         return await meCommand.execute(chatId);
+
+      case '/notifications':
+      case '/notification':
+      case '/notify':
+        const notificationsCommand = new NotificationsCommand(this.storage, this.bot);
+        return await notificationsCommand.execute(messageText, chatId);
 
       default:
         await this.sendMessageViaAdapter(chatId, 

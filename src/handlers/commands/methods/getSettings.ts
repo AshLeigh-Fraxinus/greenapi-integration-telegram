@@ -33,6 +33,9 @@ export class getSettings {
               `• ID инстанса: ${instance.idInstance}\n` +
               `• Статус: ${stateInstance.stateInstance}\n` +
               `• Номер телефона: ${settings.wid}\n\n` +
+              `• Получение входящих сообщений: ${settings.incomingWebhook}\n` +
+              `• Получение статусов отправленных сообщений: ${settings.outgoingWebhook}\n` +
+              `• Получение статуса инстанса: ${settings.stateWebhook}\n\n` +
               `Для смены инстанса используйте /resetInstance\n`
           });
 

@@ -26,24 +26,6 @@ export class TelegramAdapter extends BaseAdapter<TelegramWebhook, TelegramPlatfo
   }
 
   async handleGreenApiWebhook(webhook: any, allowedTypes?: string[]): Promise<void> {
-    const defaultTypes = ['incomingMessageReceived', 'outgoingMessageStatus', 'stateInstanceChanged'];
-    const types = allowedTypes && allowedTypes.length > 0 ? allowedTypes : defaultTypes;
-    
-    console.log("[ADAPTER] Processing webhook type:", webhook.typeWebhook);
-
-    console.log("[ADAPTER] Processing webhook type:", webhook.typeWebhook);
-  console.log("[ADAPTER] Allowed types:", types);
-  console.log("[ADAPTER] Is type allowed?", types.includes(webhook.typeWebhook));
-
-    if (!types.includes(webhook.typeWebhook)) {
-      console.error("[ADAPTER] Webhook type not allowed. Full webhook:", JSON.stringify(webhook, null, 2));
-      throw new IntegrationError(
-        `Webhook type ${webhook.typeWebhook} not allowed. Allowed: ${types.join(', ')}`,
-        "WEBHOOK_TYPE_NOT_ALLOWED",
-        400
-      );
-    }
-
     const idInstance = webhook.instanceData.idInstance;
     const user = await (this.storage as SQLiteStorage).findUserByInstanceId(idInstance);
     if (!user) {
@@ -54,6 +36,29 @@ export class TelegramAdapter extends BaseAdapter<TelegramWebhook, TelegramPlatfo
       );
     }
 
+    const notificationSettings = await (this.storage as SQLiteStorage).getNotificationSettings(user.chat_id);
+
+    let isAllowed = false;
+
+    switch (webhook.typeWebhook) {
+      case "incomingMessageReceived":
+        isAllowed = notificationSettings.incomingWebhook;
+        break;
+      case "outgoingMessageStatus":
+        isAllowed = notificationSettings.outgoingWebhook;
+        break;
+      case "stateInstanceChanged":
+        isAllowed = notificationSettings.stateWebhook;
+        break;
+      default:
+        isAllowed = false;
+    }
+
+    if (!isAllowed) {
+      console.log("[ADAPTER] Webhook type not allowed by user settings, skipping");
+      return; 
+    }
+    
     const targetChatId = await (this.storage as SQLiteStorage).getTargetChatId(user.chat_id) || user.chat_id;
     
     console.log("[ADAPTER] Sending message to chat ID:", targetChatId);

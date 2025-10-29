@@ -20,6 +20,9 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
         first_name TEXT,
         id_instance TEXT,
         apiTokenInstance TEXT,
+        incoming_webhook BOOLEAN DEFAULT 1,
+        outgoing_webhook BOOLEAN DEFAULT 1,
+        state_webhook BOOLEAN DEFAULT 1,
         partner_token TEXT,
         target_chat_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -110,6 +113,70 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
     return instance;
   }
 
+  async setNotificationSettings(chatId: string, settings: {
+    incomingWebhook?: boolean;
+    outgoingWebhook?: boolean;
+    stateWebhook?: boolean;
+  }): Promise<void> {
+    console.log('[STORAGE] Setting notification settings for user:', chatId, settings);
+    
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET 
+        incoming_webhook = ?,
+        outgoing_webhook = ?,
+        state_webhook = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
+    `);
+    
+    const user = await this.findUser(chatId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+      const incomingWebhook = settings.incomingWebhook !== undefined ? settings.incomingWebhook : true;
+      const outgoingWebhook = settings.outgoingWebhook !== undefined ? settings.outgoingWebhook : true;
+      const stateWebhook = settings.stateWebhook !== undefined ? settings.stateWebhook : true;
+      
+      const result = stmt.run(
+        incomingWebhook ? 1 : 0,
+        outgoingWebhook ? 1 : 0,
+        stateWebhook ? 1 : 0,
+        chatId
+      );
+    
+    if (result.changes === 0) {
+      throw new Error('User not found');
+    }
+    console.log('[STORAGE] Notification settings updated for user:', chatId);
+  }
+
+  async getNotificationSettings(chatId: string): Promise<{
+    incomingWebhook: boolean;
+    outgoingWebhook: boolean;
+    stateWebhook: boolean;
+  }> {
+    console.log('[STORAGE] Getting notification settings for user:', chatId);
+    
+    const stmt = this.db.prepare(`
+      SELECT incoming_webhook, outgoing_webhook, state_webhook 
+      FROM users 
+      WHERE chat_id = ?
+    `);
+    
+    const row = stmt.get(chatId) as any;
+    if (!row) {
+      throw new Error('User not found');
+    }
+    
+    return {
+      incomingWebhook: Boolean(row.incoming_webhook),
+      outgoingWebhook: Boolean(row.outgoing_webhook),
+      stateWebhook: Boolean(row.state_webhook)
+    };
+  }
+
   findUserByInstanceId(idInstance: number): TelegramUser | null {
     const stmt = this.db.prepare(`SELECT * FROM users WHERE id_instance = ?`);
     const row = stmt.get(idInstance.toString()) as any;
@@ -178,7 +245,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       user_name: row.user_name,
       first_name: row.first_name,
       language: 'en',
-      idInstance: row.id_instance ? parseInt(row.id_instance) : 0,
+      idInstance: parseInt(row.id_instance),
       apiTokenInstance: row.apiTokenInstance || '',
       state: undefined,
       created_at: new Date(row.created_at),
@@ -201,11 +268,15 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       SET user_name = ?, first_name = ?, id_instance = ?, apiTokenInstance = ?, partner_token = ?, updated_at = CURRENT_TIMESTAMP
       WHERE chat_id = ?
     `);
+    
+    const idInstanceValue = data.idInstance !== undefined 
+    ? data.idInstance.toString() 
+    : (user.idInstance ? user.idInstance.toString() : null);
 
     stmt.run(
       data.user_name || user.user_name,
       data.first_name || user.first_name,
-      data.idInstance ? data.idInstance.toString() : user.idInstance.toString(),
+      idInstanceValue,
       data.apiTokenInstance || user.apiTokenInstance,
       data.partner_token !== undefined ? data.partner_token : user.partner_token,
       identifier

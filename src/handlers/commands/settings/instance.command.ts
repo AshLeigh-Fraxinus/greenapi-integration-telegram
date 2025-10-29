@@ -1,15 +1,19 @@
+import axios from "axios";
 import { TelegramBot } from "../../../client/telegram.client";
 import { SQLiteStorage } from "../../../core/storage";
-import { setSettings } from '../methods/setSettings'
+import { getSettings } from '../methods/getSettings'
+import { setWebhook } from './setWebhook'
 
 export class InstanceCommand {
-  private setSettings: setSettings;
+  private setWebhook: setWebhook;
+  private getSettings: getSettings
 
   constructor(
     private storage: SQLiteStorage,
     private bot: TelegramBot
   ) {
-    this.setSettings = new setSettings(storage, bot);
+    this.setWebhook = new setWebhook(storage, bot);
+    this.getSettings = new getSettings(storage, bot)
   }
 
   async execute (messageText: string, chatId: string): Promise<{ status: string }> {
@@ -32,6 +36,11 @@ export class InstanceCommand {
       const idInstance = parts[1];
       const apiToken = parts[2];
 
+      const response = await axios.get(
+        `https://api.green-api.com/waInstance${idInstance}/getSettings/${apiToken}`
+      );
+      const settings = response.data;
+
       const idInstanceNumber = Number(idInstance);
       const user = await this.storage.findUser(chatId);
       const userName = user?.user_name || `user_${chatId}`;
@@ -42,7 +51,10 @@ export class InstanceCommand {
         name: userName,
         token: apiToken,
         settings: {
-          chatId: chatId
+          chatId: chatId,
+          incomingWebhook: settings.incomingWebhook,
+          outgoingWebhook: settings.outgoingWebhook,
+          stateWebhook: settings.stateWebhook
         }
       };
 
@@ -50,11 +62,11 @@ export class InstanceCommand {
 
       console.log('[COMMANDS.instance] Created/updated instance for user:', { chatId, idInstance: idInstanceNumber });
 
-      const setSettings = await this.setSettings.execute(instanceData);
+      const setWebhook = await this.setWebhook.execute(instanceData);
 
       let message = "Инстанс успешно привязан!\n\n";
 
-      if (setSettings) {
+      if (setWebhook) {
         message += "Вебхук автоматически установлен.\n\n";
       } else {
         message += "Не удалось установить вебхук автоматически. " +
