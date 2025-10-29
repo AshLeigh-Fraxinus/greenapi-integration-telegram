@@ -21,35 +21,45 @@ This integration enables interaction with WhatsApp in Telegram through the GREEN
 
 ## Architecture
 
-### Adapter Telegram
+### Components
 
-An Express.js application that:
-
-- Handles message conversion between Telegram and WhatsApp     
-- Manages GREEN-API instances    
-- Handles user authentication and command execution  
-- Provides endpoints for webhooks of both platforms   
-- Uses SQLite to store user data and instances   
+- **TelegramAdapter** - Express.js application that handles message conversion between Telegram and WhatsApp    
+- **TelegramHandler** - Processes Telegram commands and user interactions   
+- **TelegramTransformer** - Transforms messages between platforms   
+- **PartnerApiClient** - Client for working with GREEN-API Partner API  
+- **Localization** - Multi-language support system (English/Russian)  
+- **SQLiteStorage** - Database for storing user data and instances  
 
 ### Telegram commands
 
 The bot provides the following commands:
 
-- `/start` - Start working with the bot      
-- `/instance` [idInstance] [apiTokenInstance] - Connect GREEN-API instance     
-- `/resetInstance` - Reconnect instance     
-- `/status` or `/getStateInstance` - Check instance status     
-- `/help` - Command reference     
-- `/reply` or `/sendMessage` [WhatsApp number] [text] - Send message to WhatsApp      
-- `/me` - Information about current user  
-- `/setpartnertoken` [token] - Set partner token    
-- `/createinstance` - Create new instance  
-- `/getinstances` - Get list of instances  
-- `/deleteinstance` [idInstance] - Delete instance 
+- `/help` - Command reference
+- `/start` - Start working with the bot
+- `/me` - Information about current user
+- `/instance` [idInstance] [apiTokenInstance] - Connect GREEN-API instance
+- `/resetInstance` - Reconnect instance
+- `/status` or `/getStateInstance` - Check instance status
+- `/notifications` - Manage notifications
+- `/reply` or `/sendMessage` [WhatsApp number] [text] - Send message to WhatsApp
+- `/setpartnertoken` [token] - Set partner token
+- `/createinstance` - Create new instance
+- `/getinstances` - Get list of instances
+- `/deleteinstance` [idInstance] - Delete instance
+- `/language` or `/lang` - Change language
+
+### Features
+
+- Multi-language support (English/Russian)    
+- Notification management   
+- Partner API integration   
+- Instance management via bot   
+- Webhook handling for both platforms   
+- SQLite database for data persistence    
 
 ### Prerequisites
 
-- .js 16 or higher  
+- .js 18 or higher  
 - GREEN-API account and instance    
 - Telegram bot (get from @BotFather)    
 - Publicly accessible URL for webhooks (when deploying on server)   
@@ -83,10 +93,6 @@ WEBHOOK_URL= https://your-webhook-url/
 
 ```bash
 npm start
-```
-
-```bash
-npm install @green-api/greenapi-integration
 ```
 
 ### Deployment
@@ -178,7 +184,31 @@ or
 /resetInstance
 ```
 
-6. Help
+6. Change language
+
+```text
+/language en
+```
+
+or
+
+```text
+/language ru
+```
+
+7. Manage notifications
+
+```text
+/notifications on
+```
+
+or
+
+```text
+/notifications off
+```
+
+8. Help
 
 ```text
 /help
@@ -214,6 +244,8 @@ The integration uses SQLite database to store:
 
 - Telegram user data   
 - GREEN-API instance connections    
+- User settings and preferences   
+- Language preferences    
 - Settings and states  
 
 The database file `storage.db` is created automatically on first run.
@@ -237,3 +269,12 @@ The database file `storage.db` is created automatically on first run.
 1. Make sure your adapter URL is publicly accessible   
 2. Check file size (Telegram and GREEN-API limitations)    
 3. Make sure the file type is supported    
+
+### Partner API Issues
+1. Check the correctness of the partner token
+2. Ensure the partner API is accessible
+3. Check the logs for authentication errors
+
+### Localization Issues
+1. Ensure the localization files are present
+2. Check the language installation using the /language command
