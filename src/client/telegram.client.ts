@@ -1,5 +1,5 @@
 import { IntegrationError } from "@green-api/greenapi-integration";
-import { TelegramPlatformMessage } from "../types/types";
+import { TelegramPlatformMessage } from "../types/telegram";
 import axios from "axios";
 
 export class TelegramBot {

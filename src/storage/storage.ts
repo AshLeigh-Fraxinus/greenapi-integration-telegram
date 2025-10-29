@@ -1,5 +1,5 @@
 import { StorageProvider, Instance } from '@green-api/greenapi-integration'
-import { TelegramUser } from '../types/types';
+import { TelegramUser } from '../types/user';
 import Database from 'better-sqlite3';
 
 export class SQLiteStorage extends StorageProvider<TelegramUser> {
@@ -25,6 +25,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
         state_webhook BOOLEAN DEFAULT 1,
         partner_token TEXT,
         target_chat_id TEXT,
+        language TEXT DEFAULT 'en',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -187,7 +188,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       chat_id: row.chat_id,
       user_name: row.user_name,
       first_name: row.first_name,
-      language: 'en', 
+      language: row.language || 'en', 
       idInstance: row.id_instance ? parseInt(row.id_instance) : 0,
       apiTokenInstance: row.apiTokenInstance || '',
       state: undefined,
@@ -202,8 +203,8 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
   async createUser(data: Partial<TelegramUser>): Promise<TelegramUser> {
     console.log('[STORAGE] Adding new user:', data);
     const stmt = this.db.prepare(`
-      INSERT INTO users (chat_id, user_name, first_name, id_instance, apiTokenInstance, partner_token)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (chat_id, user_name, first_name, id_instance, apiTokenInstance, partner_token, language)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -212,7 +213,8 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       data.first_name || null,
       data.idInstance ? data.idInstance.toString() : null,
       data.apiTokenInstance || null,
-      data.partner_token || null
+      data.partner_token || null,
+      data.language || 'en'
     );
 
     const user: TelegramUser = {
@@ -220,7 +222,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       chat_id: data.chat_id!,
       user_name: data.user_name!,
       first_name: data.first_name,
-      language: 'en',
+      language: data.language || 'en',
       idInstance: data.idInstance || 0,
       apiTokenInstance: data.apiTokenInstance || '',
       partner_token: data.partner_token || '',
@@ -244,7 +246,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       chat_id: row.chat_id,
       user_name: row.user_name,
       first_name: row.first_name,
-      language: 'en',
+      language: row.language || 'en',
       idInstance: parseInt(row.id_instance),
       apiTokenInstance: row.apiTokenInstance || '',
       state: undefined,
@@ -265,7 +267,7 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
 
     const stmt = this.db.prepare(`
       UPDATE users 
-      SET user_name = ?, first_name = ?, id_instance = ?, apiTokenInstance = ?, partner_token = ?, updated_at = CURRENT_TIMESTAMP
+      SET user_name = ?, first_name = ?, id_instance = ?, apiTokenInstance = ?, partner_token = ?, language = ?, updated_at = CURRENT_TIMESTAMP
       WHERE chat_id = ?
     `);
     
@@ -279,10 +281,9 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
       idInstanceValue,
       data.apiTokenInstance || user.apiTokenInstance,
       data.partner_token !== undefined ? data.partner_token : user.partner_token,
+      data.language || user.language || 'en',
       identifier
     );
-
-    console.log('[STORAGE] User updated:', user.user_name);
 
     const updatedUser: TelegramUser = { 
       ...user, 
@@ -292,6 +293,28 @@ export class SQLiteStorage extends StorageProvider<TelegramUser> {
 
     console.log('[STORAGE] User', user.user_name, 'updated');
     return updatedUser;
+  }
+
+  async setUserLanguage(chatId: string, language: string): Promise<void> {
+    console.log('[STORAGE] Setting language for user:', chatId, '->', language);
+    const stmt = this.db.prepare(`
+      UPDATE users 
+      SET language = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = ?
+    `);
+    
+    const result = stmt.run(language, chatId);
+    if (result.changes === 0) {
+      throw new Error('User not found');
+    }
+    console.log('[STORAGE] Language set for user:', chatId);
+  }
+
+  async getUserLanguage(chatId: string): Promise<string> {
+    console.log('[STORAGE] Getting language for user:', chatId);
+    const stmt = this.db.prepare(`SELECT language FROM users WHERE chat_id = ?`);
+    const row = stmt.get(chatId) as any;
+    return row?.language || 'en'; 
   }
 
   async setTargetChatId(chatId: string, targetChatId: string): Promise<void> {

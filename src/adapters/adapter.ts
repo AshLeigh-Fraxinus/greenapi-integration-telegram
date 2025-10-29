@@ -1,8 +1,10 @@
 import { BaseAdapter, Instance, IntegrationError, StateInstanceWebhook } from "@green-api/greenapi-integration";
-import { TelegramWebhook, TelegramPlatformMessage } from "../types/types";
-import { TelegramTransformer } from "./telegram.transformer"
+import { TelegramWebhook, TelegramPlatformMessage } from "../types/telegram";
+import { TelegramTransformer } from "../transformers"
 import { TelegramBot } from "../client/telegram.client";
-import { SQLiteStorage } from "./storage";
+import { SQLiteStorage } from "../storage/storage";
+import { Localization } from "../utils/localization";
+
 export class TelegramAdapter extends BaseAdapter<TelegramWebhook, TelegramPlatformMessage> {
   
   public constructor(
@@ -66,9 +68,9 @@ export class TelegramAdapter extends BaseAdapter<TelegramWebhook, TelegramPlatfo
     let mainMessage: TelegramPlatformMessage;
     
     if (webhook.typeWebhook === "stateInstanceChanged") {
-      mainMessage = await (this.transformer as TelegramTransformer).handleStateInstanceChangedWithUser(webhook);
+      mainMessage = await (this.transformer as TelegramTransformer).handleStateInstanceChangedWithUser(webhook, user.language || 'en');
     } else {
-      mainMessage = this.transformer.toPlatformMessage(webhook);
+      mainMessage = (this.transformer as TelegramTransformer).toPlatformMessage(webhook, user.language || 'en');
     }
     
     const messageWithChatId = { ...mainMessage, chat_id: targetChatId };
@@ -76,7 +78,7 @@ export class TelegramAdapter extends BaseAdapter<TelegramWebhook, TelegramPlatfo
     console.log("[ADAPTER] WhatsApp message", webhook.typeWebhook, 'sent to', targetChatId)
 
     if (webhook.typeWebhook === "incomingMessageReceived") {
-      const additionalMessages = (this.transformer as TelegramTransformer).getAdditionalMessages(webhook);
+      const additionalMessages = (this.transformer as TelegramTransformer).getAdditionalMessages(webhook, user.language || 'en');
       
       for (const additionalMessage of additionalMessages) {
         const additionalWithChatId = { ...additionalMessage, chat_id: targetChatId };

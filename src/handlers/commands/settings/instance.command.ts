@@ -1,8 +1,9 @@
 import axios from "axios";
 import { TelegramBot } from "../../../client/telegram.client";
-import { SQLiteStorage } from "../../../core/storage";
+import { SQLiteStorage } from "../../../storage/storage";
 import { getSettings } from '../methods/getSettings'
 import { setWebhook } from './setWebhook'
+import { Localization } from "../../../utils/localization";
 
 export class InstanceCommand {
   private setWebhook: setWebhook;
@@ -16,7 +17,7 @@ export class InstanceCommand {
     this.getSettings = new getSettings(storage, bot)
   }
 
-  async execute (messageText: string, chatId: string): Promise<{ status: string }> {
+  async execute (messageText: string, chatId: string, language: string = 'en'): Promise<{ status: string }> {
     console.log("[COMMANDS.instance] Handling command")
     try {
       const parts = messageText.split(' ');
@@ -24,11 +25,7 @@ export class InstanceCommand {
         console.log("[COMMANDS.instance] Incorrect message format")
         await this.bot.send({
           chat_id: chatId,
-          text: "Неверный формат. Используйте:\n" +
-            "/instance 1101111111 abc123abc123abc123abc123abc123\n\n" +
-            "Где:\n" +
-            "• 1101111111 - idInstance\n" +
-            "• abc123... - apiTokenInstance"
+          text: Localization.getInstanceFormatText(language)
         });
         return { status: "invalid_format" };
       }
@@ -64,21 +61,7 @@ export class InstanceCommand {
 
       const setWebhook = await this.setWebhook.execute(instanceData);
 
-      let message = "Инстанс успешно привязан!\n\n";
-
-      if (setWebhook) {
-        message += "Вебхук автоматически установлен.\n\n";
-      } else {
-        message += "Не удалось установить вебхук автоматически. " +
-                  "Пожалуйста, установите его вручную в настройках Green API:\n" +
-                  `URL: ${process.env.WEBHOOK_URL}/webhook/whatsapp\n\n`;
-      }
-
-      message += "Теперь вы можете получать и отправлять сообщения через WhatsApp.\n\n" +
-                "Доступные команды:\n" +
-                "• /status - статус инстанса\n" +
-                "• /resetInstance - сменить инстанс\n" +
-                "• /help - помощь";
+      const message = Localization.getInstanceSuccessText(language, setWebhook ? process.env.WEBHOOK_URL : undefined);
 
       await this.bot.send({
         chat_id: chatId,
@@ -94,13 +77,12 @@ export class InstanceCommand {
       if (error instanceof Error && 'code' in error && error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         await this.bot.send({
           chat_id: chatId,
-          text: "Этот инстанс уже привязан к другому пользователю Telegram.\n\n" +
-            "Используйте другой idInstance или обратитесь к администратору."
+          text: Localization.getMessage('instance_already_linked', language)
         });
       } else {
         await this.bot.send({
           chat_id: chatId,
-          text: "Произошла ошибка при привязке инстанса"
+          text: Localization.getMessage('error_occurred', language)
         });
       }
       

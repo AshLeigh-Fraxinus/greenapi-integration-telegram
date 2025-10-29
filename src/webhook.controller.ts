@@ -1,7 +1,7 @@
 import express from 'express';
-import { TelegramAdapter } from './core/adapter';
-import { TelegramTransformer } from './core/telegram.transformer';
-import { SQLiteStorage } from './core/storage';
+import { TelegramAdapter } from './adapters/adapter';
+import { TelegramTransformer } from './transformers';
+import { SQLiteStorage } from './storage/storage';
 import { TelegramHandler } from './handlers/handler';
 import { AuthenticationError } from '@green-api/greenapi-integration';
 

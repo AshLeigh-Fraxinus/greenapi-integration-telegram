@@ -1,4 +1,4 @@
-import { SQLiteStorage } from "../../core/storage";
+import { SQLiteStorage } from "../../storage/storage";
 import { TelegramBot } from "../../client/telegram.client";
 
 export interface CommandContext {
@@ -6,6 +6,7 @@ export interface CommandContext {
   bot: TelegramBot;
   chatId: string;
   instance?: any;
+  language?: string;
 }
 
 export interface Command {

@@ -1,6 +1,6 @@
 import { IntegrationError } from "@green-api/greenapi-integration";
 import axios, { AxiosInstance } from "axios";
-import { CreateInstanceResponse, PartnerInstance, PartnerInstanceList } from "../types/types";
+import { CreateInstanceResponse, PartnerInstance, PartnerInstanceList } from "../types/";
 
 export class PartnerApiClient {
   private client: AxiosInstance;

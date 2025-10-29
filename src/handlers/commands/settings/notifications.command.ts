@@ -1,5 +1,6 @@
 import { TelegramBot } from "../../../client/telegram.client";
-import { SQLiteStorage } from "../../../core/storage";
+import { SQLiteStorage } from "../../../storage/storage";
+import { Localization } from "../../../utils/localization";
 
 export class NotificationsCommand {
   constructor(
@@ -7,19 +8,19 @@ export class NotificationsCommand {
     private bot: TelegramBot
   ) {}
 
-  async execute(messageText: string, chatId: string): Promise<{ status: string }> {
+  async execute(messageText: string, chatId: string, language: string = 'en'): Promise<{ status: string }> {
     console.log("[COMMANDS.notifications] Handling command with args:", messageText);
 
     const args = messageText.split(' ').slice(1);
 
     if (args.length === 0) {
-      return await this.showCurrentSettings(chatId);
+      return await this.showCurrentSettings(chatId, language);
     }
 
     if (args.length !== 2) {
       await this.bot.send({
         chat_id: chatId,
-        text: "Неправильный формат команды.\n\nИспользуйте:\n• <code>/notifications on incoming</code>\n• <code>/notifications off outgoing</code>\n• <code>/notifications on status</code>\n• <code>/notifications</code> - показать текущие настройки",
+        text: Localization.getMessage('invalid_format', language),
         parse_mode: "HTML"
       });
       return { status: "invalid_format" };
@@ -31,22 +32,25 @@ export class NotificationsCommand {
     if (action !== 'on' && action !== 'off') {
       await this.bot.send({
         chat_id: chatId,
-        text: "Неправильное действие. Используйте <code>on</code> или <code>off</code>",
+        text: Localization.getMessage('invalid_action', language),
         parse_mode: "HTML"
       });
       return { status: "invalid_action" };
     }
 
-    return await this.toggleNotification(chatId, action, type);
+    return await this.toggleNotification(chatId, action, type, language);
   }
 
-  private async showCurrentSettings(chatId: string): Promise<{ status: string }> {
+  private async showCurrentSettings(chatId: string, language: string): Promise<{ status: string }> {
     try {
       const settings = await this.storage.getNotificationSettings(chatId);
       
-      const statusText = (enabled: boolean) => enabled ? "включена" : "выключена";
+      const statusText = (enabled: boolean) => enabled ? 
+        (language === 'ru' || language === 'kz' ? "включена" : "enabled") : 
+        (language === 'ru' || language === 'kz' ? "выключена" : "disabled");
       
-      const message = `<b>Настройки уведомлений</b>\n\n` +
+      const message = language === 'ru' || language === 'kz' ? 
+        `<b>Настройки уведомлений</b>\n\n` +
         `<b>Входящие сообщения</b>: ${statusText(settings.incomingWebhook)}\n` +
         `<b>Статусы отправленных</b>: ${statusText(settings.outgoingWebhook)}\n` +
         `<b>Статус инстанса</b>: ${statusText(settings.stateWebhook)}\n\n` +
@@ -59,7 +63,21 @@ export class NotificationsCommand {
         `• <code>incoming</code> - входящие сообщения\n` +
         `• <code>outgoing</code> - статусы отправленных\n` +
         `• <code>state</code> - статус инстанса\n` +
-        `• <code>all</code> - все типы`;
+        `• <code>all</code> - все типы` :
+        `<b>Notifications Settings</b>\n\n` +
+        `<b>Incoming messages</b>: ${statusText(settings.incomingWebhook)}\n` +
+        `<b>Outgoing statuses</b>: ${statusText(settings.outgoingWebhook)}\n` +
+        `<b>Instance status</b>: ${statusText(settings.stateWebhook)}\n\n` +
+        `<b>Usage:</b>\n` +
+        `<code>/notifications on incoming</code> - enable incoming\n` +
+        `<code>/notifications off state</code> - disable status\n` +
+        `<code>/notifications all on</code> - enable all\n` +
+        `<code>/notifications all off</code> - disable all\n\n` +
+        `<b>Notification types:</b>\n` +
+        `• <code>incoming</code> - incoming messages\n` +
+        `• <code>outgoing</code> - outgoing statuses\n` +
+        `• <code>state</code> - instance status\n` +
+        `• <code>all</code> - all types`;
       
       await this.bot.send({
         chat_id: chatId,
@@ -74,7 +92,7 @@ export class NotificationsCommand {
       console.error("[COMMANDS.notifications] Error getting settings:", error);
       await this.bot.send({
         chat_id: chatId,
-        text: "Ошибка при получении настроек уведомлений"
+        text: Localization.getMessage('error_getting_notifications', language)
       });
       return { status: "error" };
     }
@@ -83,7 +101,8 @@ export class NotificationsCommand {
   private async toggleNotification(
     chatId: string, 
     action: 'on' | 'off', 
-    type: string
+    type: string,
+    language: string
   ): Promise<{ status: string }> {
     try {
       const isEnable = action === 'on';
@@ -94,26 +113,26 @@ export class NotificationsCommand {
       switch (type) {
         case 'incoming':
           settings.incomingWebhook = isEnable;
-          typeName = "Входящие сообщения";
+          typeName = language === 'ru' || language === 'kz' ? "Входящие сообщения" : "Incoming messages";
           break;
         case 'outgoing':
           settings.outgoingWebhook = isEnable;
-          typeName = "Статусы отправленных сообщений";
+          typeName = language === 'ru' || language === 'kz' ? "Статусы отправленных сообщений" : "Outgoing message statuses";
           break;
         case 'status':
           settings.stateWebhook = isEnable;
-          typeName = "Статус инстанса";
+          typeName = language === 'ru' || language === 'kz' ? "Статус инстанса" : "Instance status";
           break;
         case 'all':
           settings.incomingWebhook = isEnable;
           settings.outgoingWebhook = isEnable;
           settings.stateWebhook = isEnable;
-          typeName = "Все уведомления";
+          typeName = language === 'ru' || language === 'kz' ? "Все уведомления" : "All notifications";
           break;
         default:
           await this.bot.send({
             chat_id: chatId,
-            text: `Неизвестный тип уведомления: "${type}"\n\nДоступные типы: incoming, outgoing, status`,
+            text: Localization.getMessage('unknown_type', language),
             parse_mode: "HTML"
           });
           return { status: "unknown_type" };
@@ -121,9 +140,15 @@ export class NotificationsCommand {
 
       await this.storage.setNotificationSettings(chatId, settings);
       
-      const actionText = isEnable ? "включены" : "выключены";
+      const actionText = isEnable ? 
+        (language === 'ru' || language === 'kz' ? "включены" : "enabled") : 
+        (language === 'ru' || language === 'kz' ? "выключены" : "disabled");
       
-      const message = `<b>${typeName} ${actionText}</b>.\n\nПрименение настроек может занять до 5 минут.`;
+      const applyText = language === 'ru' || language === 'kz' ? 
+        "Применение настроек может занять до 5 минут." : 
+        "Settings application may take up to 5 minutes.";
+      
+      const message = `<b>${typeName} ${actionText}</b>.\n\n${applyText}`;
       
       await this.bot.send({
         chat_id: chatId,
@@ -138,7 +163,7 @@ export class NotificationsCommand {
       console.error("[COMMANDS.notifications] Error updating settings:", error);
       await this.bot.send({
         chat_id: chatId,
-        text: "Ошибка при обновлении настроек уведомлений"
+        text: Localization.getMessage('error_updating_notifications', language)
       });
       return { status: "error" };
     }

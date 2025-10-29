@@ -1,13 +1,15 @@
 import { IntegrationError } from "@green-api/greenapi-integration";
 import { PartnerApiClient } from "../client/partner.client";
 import { TelegramBot } from "../client/telegram.client";
-import { SQLiteStorage } from "../core/storage";
+import { Localization } from "../utils/localization";
+import { SQLiteStorage } from "../storage/storage";
 import {
   MeCommand,
+  getSettings,
   HelpCommand,
   SendMessage,
   StartCommand,
-  getSettings,
+  LanguageCommand,
   InstanceCommand,
   GetInstancesCommand,
   NotificationsCommand,
@@ -82,78 +84,89 @@ export class TelegramHandler {
     }
   }
 
+  private async getLocalizedMessage(chatId: string, key: string): Promise<string> {
+    const language = await this.storage.getUserLanguage(chatId);
+    return Localization.getMessage(key, language);
+  }
+
   private async handleCommand(messageText: string, chatId: string, instance: any) {
     const command = messageText.split(' ')[0];
     console.log("[HANDLER] Received command: ", command);
+
+    const language = await this.storage.getUserLanguage(chatId);
     
     switch (command) {
       case '/start':
         const startCommand = new StartCommand(this.storage, this.bot);
-        return await startCommand.execute(chatId, instance);
+        return await startCommand.execute(chatId, instance, language);
 
       case '/instance':
         const instanceCommand = new InstanceCommand(this.storage, this.bot);
-        return await instanceCommand.execute(messageText, chatId);
+        return await instanceCommand.execute(messageText, chatId, language);
 
       case '/resetInstance':
       case '/resetinstance':
         const resetInstanceCommand = new ChangeInstanceCommand(this.storage, this.bot);
-        return await resetInstanceCommand.execute(chatId);
+        return await resetInstanceCommand.execute(chatId, language);
 
       case '/status':
       case '/getStateInstance':
       case '/getstateinstance':
         const statusCommand = new getSettings(this.storage, this.bot);
-        return await statusCommand.execute(chatId, instance);
+        return await statusCommand.execute(chatId, instance, language);
 
       case '/help':
         const helpCommand = new HelpCommand(this.bot);
-        return await helpCommand.execute(chatId);
+        return await helpCommand.execute(chatId, language);
 
       case '/reply':
       case '/sendMessage':
       case '/sendmessage':
         const replyCommand = new SendMessage(this.bot);
-        return await replyCommand.execute(messageText, chatId, instance);
+        return await replyCommand.execute(messageText, chatId, instance, language);
 
       case '/setpartnertoken':
       case '/setPartnerToken':
       case '/partnerToken':
       case '/partnertoken':
         const setTokenCommand = new SetPartnerTokenCommand(this.storage, this.bot);
-        return await setTokenCommand.execute(messageText, chatId);
+        return await setTokenCommand.execute(messageText, chatId, language);
 
       case '/createinstance':
       case '/createInstance':
         const createInstanceCommand = new CreateInstanceCommand(this.storage, this.bot);
-        return await createInstanceCommand.execute(chatId);
+        return await createInstanceCommand.execute(chatId, language);
 
       case '/getinstances':
       case '/getInstances':
         const getInstancesCommand = new GetInstancesCommand(this.storage, this.bot);
-        return await getInstancesCommand.execute(chatId);
+        return await getInstancesCommand.execute(chatId, language);
 
       case '/deleteinstance':
       case '/deleteInstance':
       case '/deleteInstanceAccount':
       case '/deleteinstanceaccount':
         const deleteInstanceAccountCommand = new DeleteInstanceCommand(this.storage, this.bot);
-        return await deleteInstanceAccountCommand.execute(messageText, chatId);
+        return await deleteInstanceAccountCommand.execute(messageText, chatId, language);
       
       case '/me':
         const meCommand = new MeCommand(this.storage, this.bot);
-        return await meCommand.execute(chatId);
+        return await meCommand.execute(chatId, language);
 
       case '/notifications':
       case '/notification':
       case '/notify':
         const notificationsCommand = new NotificationsCommand(this.storage, this.bot);
-        return await notificationsCommand.execute(messageText, chatId);
+        return await notificationsCommand.execute(messageText, chatId, language);
+      
+      case '/language':
+      case '/lang':
+        const languageCommand = new LanguageCommand(this.storage, this.bot);
+        return await languageCommand.execute(messageText, chatId);
 
       default:
-        await this.sendMessageViaAdapter(chatId, 
-          "Неизвестная команда. Используйте /help для списка доступных команд."
-        );
+        const unknownCommandMsg = await this.getLocalizedMessage(chatId, 'unknown_command');
+        await this.sendMessageViaAdapter(chatId, `${unknownCommandMsg}`);
         console.log('[HANDLER] Unknown command:', command);
         return { status: "unknown_command" };
     }
