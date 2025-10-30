@@ -147,12 +147,13 @@ export class Localization {
 • <code>/instance &lt;id&gt; &lt;token&gt;</code> — Привязать инстанс Green API
 • /status — Проверить статус инстанса
 • /resetInstance — Сменить привязанный инстанс
+• <code>/notifications &lt;type&gt; &lt;on|off&gt;</code> - Управление уведомлениями (получение входящих (<code>incoming</code>) сообщений, статусов отправленных сообщений (<code>outgoing</code>) и статуса инстанса(<code>status</code>))
 
 <b>Команды WhatsApp:</b>
 • <code>/reply &lt;chatId&gt; &lt;message&gt;</code> — Отправить сообщение в чат WhatsApp
 
 <b>Настройки пересылки</b>
-• <code>/setchat &lt;chat_id&gt;</code> — Настроить пересылку в другой чат
+• <code>/setchat &lt;chat_id&gt;</code> — Настроить пересылку в другой телеграм чат
 • /resetchat — Сбросить настройки пересылки (получать в этот чат)
 
 <b>Управление инстансами (партнёрские методы):</b>
@@ -180,12 +181,13 @@ Welcome to the message forwarding bot!
 • <code>/instance &lt;id&gt; &lt;token&gt;</code> — Link Green API instance
 • /status — Check instance status
 • /resetInstance — Change linked instance
+• <code>/notifications &lt;type&gt; &lt;on|off&gt;</code> - Managing notifications (receiving incoming (<code>incoming</code>) messages, sent message statuses (<code>outgoing</code>) and instance status (<code>status</code>))
 
 <b>WhatsApp commands:</b>
 • <code>/reply &lt;chatId&gt; &lt;message&gt;</code> — Send message to WhatsApp chat
 
 <b>Forwarding settings</b>
-• <code>/setchat &lt;chat_id&gt;</code> — Configure forwarding to another chat
+• <code>/setchat &lt;chat_id&gt;</code> — Configure forwarding to another telegram chat
 • /resetchat — Reset forwarding settings (receive in this chat)
 
 <b>Instance management (partner methods):</b>

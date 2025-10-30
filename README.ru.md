@@ -40,7 +40,8 @@
 - `/instance` [idInstance] [apiTokenInstance] - Привязка инстанса GREEN-API     
 - `/resetInstance` - Перепривязка инстанса     
 - `/status` или `/getStateInstance` - Проверка статуса инстанса     
-- `/notifications` - Управление уведомлениями
+- `/notifications` [type] [on|off] - Управление уведомлениями (получение входящих сообщений, статусов отправленных сообщений и статуса инстанса)
+- `/setchat` [chat_id] — Настроить пересылку в другой телеграм чат 
 - `/reply` или `/sendMessage` [номер WhatsApp] [текст] - Отправка сообщения в WhatsApp      
 - `/setpartnertoken` [token] - Установка партнерского токена  
 - `/createinstance` - Создание нового инстанса  
@@ -59,7 +60,7 @@
 
 ### Предварительные требования
 
-- Node.js 18 или выше   
+- Node.js 20 или выше   
 - Аккаунт и инстанс GREEN-API   
 - Telegram бот (получить у @BotFather)  
 - Доступный публичный URL для вебхуков (при развертывании на сервере)   
@@ -75,13 +76,19 @@ mkdir telegram-greenapi-adapter
 cd telegram-greenapi-adapter
 ```
 
-2. Установите зависимости:
+2. Склонируйте репозиторий:
+
+```bash
+git clone https://github.com/AshLeigh-Fraxinus/greenapi-integration-telegram.git
+```
+
+3. Установите зависимости:
 
 ```bash
 npm install
 ```
 
-3. Настройте переменные окружения в файле .env:
+4. Настройте переменные окружения в файле .env:
 
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
@@ -89,7 +96,7 @@ PORT=3000
 WEBHOOK_URL= https://your-webhook-url/
 ```
 
-4. Запустите приложение:
+5. Запустите приложение:
 
 ```bash
 npm start
@@ -198,15 +205,45 @@ docker-compose up -d
 
 7. Управление уведомлениямии
 
-```text
-/notifications on
-```
+- Включить **все** уведомления
+  ```text
+  /notifications all on
+  ```
 
-или
+- Отключить **все** уведомления:
+  ```text
+  /notifications all off
+  ```
 
-```text
-/notifications off
-```
+- Включить уведомления о **входящих сообщениях**
+  ```text
+  /notifications incoming on
+  ```
+
+- Отключить уведомления о **входящих сообщениях**
+  ```text
+  /notifications incoming off
+  ```
+
+- Включить уведомления о **статусах отправленных сообщений**
+  ```text
+  /notifications outgoing on
+  ```
+
+- Отключить уведомления о **статусах отправленных сообщений**
+  ```text
+  /notifications outgoing off
+  ```
+
+- Включить уведомления о **статусе инстанса**
+  ```text
+  /notifications status on
+  ```
+
+- Отключить уведомления о **статусе инстанса**
+  ```text
+  /notifications status off
+  ```
 
 8. Справка
 
@@ -227,7 +264,7 @@ docker-compose up -d
 
 ### Поддерживаемые типы сообщений
 
-Интеграция поддерживает следующие типы сообщений WhatsApp:
+Интеграция пересылает следующие типы сообщений из WhatsApp в Telegram:
 
 - Текстовые сообщения   
 - Изображения (с подписями)     
@@ -237,6 +274,10 @@ docker-compose up -d
 - Локации   
 - Контакты  
 - Опросы    
+
+Интеграция пересылает следующие типы сообщений из Telegram в WhatsApp:
+
+- Текстовые сообщения   
 
 ### Хранение данных
 

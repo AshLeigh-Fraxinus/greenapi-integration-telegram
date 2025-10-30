@@ -40,7 +40,8 @@ The bot provides the following commands:
 - `/instance` [idInstance] [apiTokenInstance] - Connect GREEN-API instance
 - `/resetInstance` - Reconnect instance
 - `/status` or `/getStateInstance` - Check instance status
-- `/notifications` - Manage notifications
+- `/notifications` [type] [on|off] - Manage notifications (receiving incoming messages, statuses of sent messages, and instance status)
+- `/setchat` [chat_id] — Set up forwarding to another Telegram chat
 - `/reply` or `/sendMessage` [WhatsApp number] [text] - Send message to WhatsApp
 - `/setpartnertoken` [token] - Set partner token
 - `/createinstance` - Create new instance
@@ -59,7 +60,7 @@ The bot provides the following commands:
 
 ### Prerequisites
 
-- .js 18 or higher  
+- .js 20 or higher  
 - GREEN-API account and instance    
 - Telegram bot (get from @BotFather)    
 - Publicly accessible URL for webhooks (when deploying on server)   
@@ -75,13 +76,19 @@ mkdir telegram-greenapi-adapter
 cd telegram-greenapi-adapter
 ```
 
-2. Install dependencies:
+2. Clone the repository:
+
+```bash
+git clone https://github.com/AshLeigh-Fraxinus/greenapi-integration-telegram.git
+```
+
+3. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Configure environment variables in .env file:
+4. Configure environment variables in .env file:
 
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
@@ -89,7 +96,7 @@ PORT=3000
 WEBHOOK_URL= https://your-webhook-url/
 ```
 
-4. Start the application:
+5. Start the application:
 
 ```bash
 npm start
@@ -198,15 +205,45 @@ or
 
 7. Manage notifications
 
-```text
-/notifications on
-```
+- Enable **all** notifications
+  ```text
+  /notifications all on
+  ```
 
-or
+- Disable **all** notifications:
+  ```text
+  /notifications all off
+  ```
 
-```text
-/notifications off
-```
+- Enable notifications about **incoming messages**
+  ```text
+  /notifications incoming on
+  ```
+
+- Disable notifications about **incoming messages**
+  ```text
+  /notifications incoming off
+  ```
+
+- Enable notifications about **sent message statuses**
+  ```text
+  /notifications outgoing on
+  ```
+
+- Disable notifications about **sent message statuses**
+  ```text
+  /notifications outgoing off
+  ```
+
+- Enable notifications about **instance status**
+  ```text
+  /notifications status on
+  ```
+
+- Disable notifications about **instance status**
+  ```text
+  /notifications status off
+  ```
 
 8. Help
 
@@ -227,16 +264,20 @@ These credentials can be obtained in the GREEN-API console after creating an ins
 
 ### Supported Message Types
 
-The integration supports the following WhatsApp message types:
+The integration forwards the following types of messages from WhatsApp to Telegram:
 
-- Text messages     
-- Images (with captions)    
-- Video (with captions) 
-- Audio (with captions) 
-- Documents (with captions) 
-- Locations 
-- Contacts  
-- Polls     
+- Text messages
+- Images (with captions)
+- Videos (with captions)
+- Audio (with captions)
+- Documents (with captions)
+- Locations
+- Contacts
+- Polls
+
+The integration forwards the following types of messages from Telegram to WhatsApp:
+
+- Text messages
 
 ### Data Storage
 
