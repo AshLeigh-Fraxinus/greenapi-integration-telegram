@@ -49,17 +49,30 @@ export class TelegramHandler {
       }
 
       if (!user_name) {
-        return { status: "error", statusCode: 200, error: "Messages from chats and channels are not supported" };
+        console.log('[HANDLER] User without username detected, using fallback');
       }
+          
+      const effective_username = user_name || `no_name_user_${telegram_chat_id}`;
+      const effective_first_name = first_name || `no_first_name_user_${telegram_chat_id}`;
+
+          console.log('[HANDLER] Telegram  user data:', { 
+              raw_username: user_name,
+              raw_first_name: first_name, 
+              chat_id: telegram_chat_id,
+              final_username: effective_username,
+              final_first_name: effective_first_name
+            });
 
       let user = await this.storage.findUser(telegram_chat_id);
       if (!user) {
         user = await this.storage.createUser({
           chat_id: telegram_chat_id,
-          user_name: user_name,
-          first_name: first_name
+          user_name: effective_username,
+          first_name: effective_first_name
         });
-        console.log('[HANDLER] Created new user:', user);
+      console.log('[HANDLER] Created new user:', user);
+      } else {
+        console.log('[HANDLER] Found existing user:', user);
       }
 
       const instance = await this.storage.findInstanceByChatId(telegram_chat_id);
